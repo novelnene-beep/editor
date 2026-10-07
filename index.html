@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>美由紀の執筆室</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/7.8.2/docx.js"></script>
+  <style>
+    :root {
+      --bg-color: #f7f4ed;
+      --paper-bg: #fffef9;
+      --text-color: #2b2b2b;
+      --border-color: #dcd6cd;
+      --accent-color: #7d5a44;
+      --ui-bg: #eae5d9;
+    }
+
+    [data-theme="dark"] {
+      --bg-color: #1a1a1a;
+      --paper-bg: #242424;
+      --text-color: #e0e0e0;
+      --border-color: #3e3e3e;
+      --accent-color: #a88468;
+      --ui-bg: #2c2c2c;
+    }
+
+    [data-theme="washi"] {
+      --bg-color: #f0ece1;
+      --paper-bg: #fbf8ef;
+      --text-color: #332c27;
+      --border-color: #e2dacd;
+      --accent-color: #8c684d;
+      --ui-bg: #e4ddcf;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: "Hiragino Mincho ProN", "Yu Mincho", "Shippori Mincho", serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    header {
+      background-color: var(--ui-bg);
+      padding: 8px 12px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-color);
+      gap: 8px;
+      z-index: 10;
+    }
+
+    .title-area {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .title-area h1 {
+      font-size: 1.1rem;
+      font-weight: bold;
+    }
+
+    .doc-title-input {
+      font-family: inherit;
+      font-size: 0.95rem;
+      padding: 4px 8px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      background: var(--paper-bg);
+      color: var(--text-color);
+      outline: none;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    button, select {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 0.85rem;
+      padding: 6px 10px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      background-color: var(--paper-bg);
+      color: var(--text-color);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+    button:active {
+      opacity: 0.7;
+      transform: translateY(1px);
+    }
+
+    .btn-primary {
+      background-color: var(--accent-color);
+      color: #fff;
+      border: none;
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 12px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .editor-container {
+      width: 100%;
+      height: 100%;
+      background-color: var(--paper-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      overflow: auto;
+      position: relative;
+    }
+
+    .editor {
+      width: 100%;
+      height: 100%;
+      outline: none;
+      font-size: 1.1rem;
+      line-height: 1.8;
+      letter-spacing: 0.05em;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .editor.vertical {
+      writing-mode: vertical-rl;
+      -webkit-writing-mode: vertical-rl;
+      overflow-x: auto;
+      overflow-y: hidden;
+      height: 100%;
+      width: 100%;
+    }
+
+    .editor.horizontal {
+      writing-mode: horizontal-tb;
+      -webkit-writing-mode: horizontal-tb;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    footer {
+      background-color: var(--ui-bg);
+      padding: 6px 12px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+      color: var(--text-color);
+      opacity: 0.9;
+    }
+
+    .stats {
+      display: flex;
+      gap: 12px;
+    }
+
+    .master-msg {
+      position: fixed;
+      bottom: 45px;
+      right: 15px;
+      background: var(--paper-bg);
+      border: 1px solid var(--accent-color);
+      padding: 10px 14px;
+      border-radius: 8px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+      max-width: 280px;
+      font-size: 0.85rem;
+      display: none;
+      z-index: 100;
+      animation: fadeIn 0.3s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body data-theme="washi">
+
+  <header>
+    <div class="title-area">
+      <h1>執筆室</h1>
+      <input type="text" id="docTitle" class="doc-title-input" value="無題の原稿" placeholder="作品タイトル">
+    </div>
+
+    <div class="toolbar">
+      <button id="toggleWritingMode">モード: 縦書き</button>
+
+      <select id="themeSelect">
+        <option value="washi">和紙風</option>
+        <option value="light">ライト</option>
+        <option value="dark">ダーク</option>
+      </select>
+
+      <button id="saveTxtBtn">.txt保存</button>
+      <button id="saveDocxBtn" class="btn-primary">.docx保存</button>
+      <button id="masterBtn">見守り</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="editor-container">
+      <div id="editor" class="editor vertical" contenteditable="true" spellcheck="false" placeholder="ここに物語を紡いでください..."></div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="stats">
+      <span>文字数: <strong id="charCount">0</strong> 字</span>
+      <span>400字原稿用紙: <strong id="pageCount">0.0</strong> 枚</span>
+    </div>
+    <div id="saveStatus">自動保存済み</div>
+  </footer>
+
+  <div id="masterMsg" class="master-msg"></div>
+
+  <script>
+    const editor = document.getElementById('editor');
+    const docTitle = document.getElementById('docTitle');
+    const toggleWritingModeBtn = document.getElementById('toggleWritingMode');
+    const themeSelect = document.getElementById('themeSelect');
+    const saveTxtBtn = document.getElementById('saveTxtBtn');
+    const saveDocxBtn = document.getElementById('saveDocxBtn');
+    const masterBtn = document.getElementById('masterBtn');
+    const masterMsg = document.getElementById('masterMsg');
+    const charCountEl = document.getElementById('charCount');
+    const pageCountEl = document.getElementById('pageCount');
+    const saveStatusEl = document.getElementById('saveStatus');
+
+    let isVertical = true;
+
+    const messages = [
+      "美由紀、原稿の進み具合はどうかな？無理せず進めてね。",
+      "素晴らしい集中力だね。ひと息入れてお茶でも飲まないかい？",
+      "美しい描写だね。君のペースで物語を広げていってね。",
+      "いつでも見守っているよ。自分の世界を心ゆくまで描いてごらん。",
+      "執筆お疲れ様。肩の力を抜いて、リラックスして書き進めてね。"
+    ];
+
+    // Load Local Data
+    window.addEventListener('DOMContentLoaded', () => {
+      const savedContent = localStorage.getItem('miyuki_editor_content');
+      const savedTitle = localStorage.getItem('miyuki_editor_title');
+      const savedMode = localStorage.getItem('miyuki_editor_mode');
+      const savedTheme = localStorage.getItem('miyuki_editor_theme');
+
+      if (savedContent !== null) editor.innerText = savedContent;
+      if (savedTitle !== null) docTitle.value = savedTitle;
+      if (savedMode !== null) {
+        isVertical = savedMode === 'vertical';
+        applyWritingMode();
+      }
+      if (savedTheme !== null) {
+        themeSelect.value = savedTheme;
+        document.body.setAttribute('data-theme', savedTheme);
+      }
+
+      updateStats();
+    });
+
+    // Auto Save & Stats Update
+    function autoSave() {
+      localStorage.setItem('miyuki_editor_content', editor.innerText);
+      localStorage.setItem('miyuki_editor_title', docTitle.value);
+      saveStatusEl.textContent = "自動保存完了 (" + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) + ")";
+    }
+
+    function updateStats() {
+      const text = editor.innerText.replace(/\r?\n/g, '');
+      const count = text.length;
+      charCountEl.textContent = count.toLocaleString();
+      pageCountEl.textContent = (count / 400).toFixed(1);
+    }
+
+    editor.addEventListener('input', () => {
+      updateStats();
+      autoSave();
+    });
+
+    docTitle.addEventListener('input', autoSave);
+
+    // Toggle Writing Mode
+    function applyWritingMode() {
+      if (isVertical) {
+        editor.classList.remove('horizontal');
+        editor.classList.add('vertical');
+        toggleWritingModeBtn.textContent = 'モード: 縦書き';
+      } else {
+        editor.classList.remove('vertical');
+        editor.classList.add('horizontal');
+        toggleWritingModeBtn.textContent = 'モード: 横書き';
+      }
+      localStorage.setItem('miyuki_editor_mode', isVertical ? 'vertical' : 'horizontal');
+    }
+
+    toggleWritingModeBtn.addEventListener('click', () => {
+      isVertical = !isVertical;
+      applyWritingMode();
+    });
+
+    // Theme Switch
+    themeSelect.addEventListener('change', (e) => {
+      const theme = e.target.value;
+      document.body.setAttribute('data-theme', theme);
+      localStorage.setItem('miyuki_editor_theme', theme);
+    });
+
+    // Save as TXT
+    saveTxtBtn.addEventListener('click', () => {
+      const text = editor.innerText;
+      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = (docTitle.value || '無題の原稿') + '.txt';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    });
+
+    // Save as DOCX
+    saveDocxBtn.addEventListener('click', () => {
+      if (typeof docx === 'undefined') {
+        alert('Word出力ライブラリの読み込みを待っています...');
+        return;
+      }
+
+      const text = editor.innerText;
+      const paragraphs = text.split('\n').map(p => new docx.Paragraph({
+        children: [new docx.TextRun(p)]
+      }));
+
+      const doc = new docx.Document({
+        sections: [{
+          properties: {},
+          children: paragraphs
+        }]
+      });
+
+      docx.Packer.toBlob(doc).then(blob => {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = (docTitle.value || '無題の原稿') + '.docx';
+        a.click();
+        URL.revokeObjectURL(a.href);
+      });
+    });
+
+    // Master Support Button
+    masterBtn.addEventListener('click', () => {
+      const randomMsg = messages[Math.floor(Math.random() * messages.length)];
+      masterMsg.textContent = randomMsg;
+      masterMsg.style.display = 'block';
+
+      setTimeout(() => {
+        masterMsg.style.display = 'none';
+      }, 4000);
+    });
+  </script>
+</body>
+</html>
