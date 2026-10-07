@@ -4,7 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>執筆室 - 美由紀エディタ</title>
+  <!-- docx出力用ライブラリ -->
   <script src="https://unpkg.com/docx@8.2.2/build/index.umd.js"></script>
+  <!-- docx読み込み用ライブラリ (mammoth.js) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
   <style>
     * {
       box-sizing: border-box;
@@ -49,7 +52,7 @@
       min-width: 120px;
     }
 
-    select, button {
+    select, button, label.btn-label {
       font-family: inherit;
       font-size: 0.85rem;
       padding: 6px 10px;
@@ -58,12 +61,18 @@
       background-color: #faf8f5;
       color: #4a3e3d;
       cursor: pointer;
+      display: inline-block;
     }
 
     button.primary {
       background-color: #8c6d58;
       color: #fff;
       border-color: #735745;
+    }
+
+    /* 隠しファイル入力 */
+    input[type="file"] {
+      display: none;
     }
 
     main {
@@ -140,6 +149,12 @@
       <option value="horizontal">モード: 横書き</option>
     </select>
 
+    <!-- ファイル選択ボタン -->
+    <label class="btn-label">
+      📁 開く
+      <input type="file" id="fileInput" accept=".txt,.docx">
+    </label>
+
     <button id="btnTxt">.txt保存</button>
     <button id="btnDocx" class="primary">.docx保存</button>
   </header>
@@ -165,6 +180,7 @@
     const cheerMsg = document.getElementById('cheerMsg');
     const btnTxt = document.getElementById('btnTxt');
     const btnDocx = document.getElementById('btnDocx');
+    const fileInput = document.getElementById('fileInput');
 
     const cheers = [
       "執筆、お疲れ様です✨",
@@ -191,25 +207,22 @@
       updateStatus();
     });
 
-    // 入力・消去時のイベント
+    // 入力・消去イベント
     editor.addEventListener('input', () => {
-      // 画面の強制描画更新（iOSの縦書き描画遅延対策）
       forceRedraw();
-      
       updateStatus();
       
-      // 保存
       if (saveTimeout) clearTimeout(saveTimeout);
       saveTimeout = setTimeout(() => {
         localStorage.setItem(STORAGE_KEY_TEXT, editor.value);
       }, 200);
     });
 
-    // iOSの描画遅延を打ち消す強制フラッシュ処理
+    // iOSの描画遅延対策
     function forceRedraw() {
       const display = editor.style.display;
       editor.style.display = 'none';
-      editor.offsetHeight; // 強制リフロー発生
+      editor.offsetHeight;
       editor.style.display = display;
     }
 
@@ -225,6 +238,54 @@
       }
     });
 
+    // ファイル読み込み処理（.txt と .docx）
+    fileInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const confirmOverwrite = confirm('現在の文章を上書きしてファイルを開きますか？');
+      if (!confirmOverwrite) {
+        fileInput.value = '';
+        return;
+      }
+
+      // ファイル名から拡張子を除いたものをタイトルに設定
+      const fileNameWithoutExt = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+      docTitle.value = fileNameWithoutExt;
+      localStorage.setItem(STORAGE_KEY_TITLE, fileNameWithoutExt);
+
+      if (file.name.endsWith('.docx')) {
+        // Wordファイルの読み込み
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          const arrayBuffer = event.target.result;
+          mammoth.extractRawText({ arrayBuffer: arrayBuffer })
+            .then(result => {
+              editor.value = result.value;
+              localStorage.setItem(STORAGE_KEY_TEXT, editor.value);
+              updateStatus();
+              forceRedraw();
+            })
+            .catch(err => {
+              alert('Wordファイルの読み込みに失敗しました。');
+            });
+        };
+        reader.readAsArrayBuffer(file);
+      } else {
+        // テキストファイルの読み込み
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          editor.value = event.target.result;
+          localStorage.setItem(STORAGE_KEY_TEXT, editor.value);
+          updateStatus();
+          forceRedraw();
+        };
+        reader.readAsText(file, 'UTF-8');
+      }
+
+      fileInput.value = ''; // リセット
+    });
+
     function updateStatus() {
       const count = editor.value.length;
       charCount.textContent = count.toLocaleString();
@@ -237,6 +298,7 @@
       }
     }
 
+    // .txt保存
     btnTxt.addEventListener('click', () => {
       const title = docTitle.value.trim() || '無題の原稿';
       const blob = new Blob([editor.value], { type: 'text/plain;charset=utf-8' });
@@ -247,6 +309,7 @@
       URL.revokeObjectURL(a.href);
     });
 
+    // .docx保存
     btnDocx.addEventListener('click', async () => {
       const title = docTitle.value.trim() || '無題の原稿';
       const text = editor.value;
