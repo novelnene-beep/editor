@@ -2,9 +2,8 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>執筆室 - 美由紀エディタ</title>
-  <!-- docx.js ライブラリ (Wordファイル出力用) -->
   <script src="https://unpkg.com/docx@8.2.2/build/index.umd.js"></script>
   <style>
     * {
@@ -13,39 +12,37 @@
       padding: 0;
     }
 
-    body {
-      font-family: "Hiragino Mincho ProN", "Yu Mincho", "MS PMincho", serif;
+    /* 画面全体の縦スクロールを許可 */
+    html, body {
       background-color: #e8e3d9;
       color: #333;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
+      font-family: "Hiragino Mincho ProN", "Yu Mincho", "MS PMincho", serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      overflow-y: auto;
     }
 
-    /* 上部ヘッダー・ツールバー */
+    /* 上部ヘッダー */
     header {
       background-color: #e8e3d9;
-      padding: 10px 12px;
+      padding: 12px;
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
       align-items: center;
       border-bottom: 1px solid #d4cebe;
-      z-index: 10;
     }
 
     .app-title {
       font-weight: bold;
       font-size: 1.1rem;
       color: #4a3e3d;
-      margin-right: 4px;
     }
 
     input[type="text"].title-input {
       font-family: inherit;
       font-size: 0.95rem;
-      padding: 4px 8px;
+      padding: 6px 8px;
       border: 1px solid #c5bea8;
       border-radius: 4px;
       background: #faf8f5;
@@ -57,7 +54,7 @@
     select, button {
       font-family: inherit;
       font-size: 0.85rem;
-      padding: 5px 10px;
+      padding: 6px 10px;
       border: 1px solid #b3a890;
       border-radius: 4px;
       background-color: #faf8f5;
@@ -71,25 +68,15 @@
       border-color: #735745;
     }
 
-    button:active {
-      opacity: 0.8;
-    }
-
-    /* エディタ本体の表示領域 */
+    /* メイン入力エリア（iPhoneでしっかり打てる高さを確保） */
     main {
-      flex: 1;
       padding: 10px;
-      display: flex;
-      justify-content: center;
-      align-items: stretch;
-      overflow: hidden;
-      position: relative;
     }
 
-    /* 執筆用紙風エリア */
     .editor-container {
       width: 100%;
-      height: 100%;
+      height: 65vh; /* 画面高さを適切に制限 */
+      min-height: 400px;
       background-color: #fdfbf7;
       border: 1px solid #d4cebe;
       border-radius: 8px;
@@ -113,7 +100,7 @@
       word-wrap: break-word;
     }
 
-    /* 縦書きモード時の調整 */
+    /* 縦書き設定 */
     textarea.vertical {
       writing-mode: vertical-rl;
       -webkit-writing-mode: vertical-rl;
@@ -121,23 +108,17 @@
       overflow-y: hidden;
     }
 
-    /* 下部ステータスバー (画面最下部に固定) */
+    /* 下部ステータスエリア（原稿枠の下に表示） */
     footer {
       background-color: #dfd8c8;
       border-top: 1px solid #c8c0ae;
-      padding: 8px 12px;
+      padding: 12px;
+      margin-top: 10px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       font-size: 0.85rem;
       color: #5c5048;
-      z-index: 10;
-    }
-
-    .status-left {
-      display: flex;
-      gap: 12px;
-      align-items: center;
     }
 
     .char-count {
@@ -174,7 +155,7 @@
   </main>
 
   <footer>
-    <div class="status-left">
+    <div>
       <span class="char-count">文字数: <strong id="charCount">0</strong> 字</span>
     </div>
     <div id="cheerMsg" class="cheer-msg">見守り中...</div>
@@ -189,7 +170,6 @@
     const btnTxt = document.getElementById('btnTxt');
     const btnDocx = document.getElementById('btnDocx');
 
-    // 応援メッセージリスト
     const cheers = [
       "執筆、お疲れ様です✨",
       "素敵な表現ですね！",
@@ -199,11 +179,9 @@
       "あなたのペースで進めましょう"
     ];
 
-    // ローカルストレージキー
     const STORAGE_KEY_TEXT = 'miyuki_editor_content';
     const STORAGE_KEY_TITLE = 'miyuki_editor_title';
 
-    // 初期化（データ読み込み）
     window.addEventListener('DOMContentLoaded', () => {
       const savedText = localStorage.getItem(STORAGE_KEY_TEXT);
       const savedTitle = localStorage.getItem(STORAGE_KEY_TITLE);
@@ -214,7 +192,6 @@
       updateStatus();
     });
 
-    // 入力・保存イベント
     editor.addEventListener('input', () => {
       localStorage.setItem(STORAGE_KEY_TEXT, editor.value);
       updateStatus();
@@ -224,7 +201,6 @@
       localStorage.setItem(STORAGE_KEY_TITLE, docTitle.value);
     });
 
-    // 縦書き/横書き切り替え
     writingMode.addEventListener('change', (e) => {
       if (e.target.value === 'vertical') {
         editor.classList.add('vertical');
@@ -233,7 +209,6 @@
       }
     });
 
-    // ステータス更新（文字数＆応援メッセージ）
     function updateStatus() {
       const count = editor.value.length;
       charCount.textContent = count.toLocaleString();
@@ -246,7 +221,6 @@
       }
     }
 
-    // .txt保存
     btnTxt.addEventListener('click', () => {
       const title = docTitle.value.trim() || '無題の原稿';
       const blob = new Blob([editor.value], { type: 'text/plain;charset=utf-8' });
@@ -257,7 +231,6 @@
       URL.revokeObjectURL(a.href);
     });
 
-    // .docx保存
     btnDocx.addEventListener('click', async () => {
       const title = docTitle.value.trim() || '無題の原稿';
       const text = editor.value;
@@ -269,14 +242,13 @@
 
       const { Document, Packer, Paragraph, TextRun } = window.docx;
 
-      // 改行ごとに段落化
       const paragraphs = text.split('\n').map(line => {
         return new Paragraph({
           children: [
             new TextRun({
               text: line,
               font: "Hiragino Mincho ProN",
-              size: 21, // 10.5pt
+              size: 21,
             }),
           ],
         });
