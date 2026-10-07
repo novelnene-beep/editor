@@ -149,10 +149,10 @@
       <option value="horizontal">モード: 横書き</option>
     </select>
 
-    <!-- ファイル選択ボタン -->
+    <!-- ファイル選択ボタン (accept制限を外してすべてのファイルを選択可能に) -->
     <label class="btn-label">
       📁 開く
-      <input type="file" id="fileInput" accept=".txt,.docx">
+      <input type="file" id="fileInput">
     </label>
 
     <button id="btnTxt">.txt保存</button>
@@ -238,7 +238,7 @@
       }
     });
 
-    // ファイル読み込み処理（.txt と .docx）
+    // ファイル読み込み処理
     fileInput.addEventListener('change', async (e) => {
       const file = e.target.files[0];
       if (!file) return;
@@ -250,12 +250,15 @@
       }
 
       // ファイル名から拡張子を除いたものをタイトルに設定
-      const fileNameWithoutExt = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+      const lastDotIndex = file.name.lastIndexOf('.');
+      const fileNameWithoutExt = lastDotIndex !== -1 ? file.name.substring(0, lastDotIndex) : file.name;
       docTitle.value = fileNameWithoutExt;
       localStorage.setItem(STORAGE_KEY_TITLE, fileNameWithoutExt);
 
-      if (file.name.endsWith('.docx')) {
-        // Wordファイルの読み込み
+      const fileNameLower = file.name.toLowerCase();
+
+      if (fileNameLower.endsWith('.docx')) {
+        // Word(.docx)ファイルの読み込み
         const reader = new FileReader();
         reader.onload = function(event) {
           const arrayBuffer = event.target.result;
@@ -267,12 +270,12 @@
               forceRedraw();
             })
             .catch(err => {
-              alert('Wordファイルの読み込みに失敗しました。');
+              alert('Wordファイルのテキスト抽出に失敗しました。ファイルが破損しているか、対応していない形式の可能性があります。');
             });
         };
         reader.readAsArrayBuffer(file);
       } else {
-        // テキストファイルの読み込み
+        // テキストファイルとして読み込み (.txt や拡張子なしなど)
         const reader = new FileReader();
         reader.onload = function(event) {
           editor.value = event.target.result;
