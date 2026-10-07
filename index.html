@@ -178,10 +178,9 @@
     const STORAGE_KEY_TEXT = 'miyuki_editor_content';
     const STORAGE_KEY_TITLE = 'miyuki_editor_title';
 
-    let isComposing = false; // 日本語入力中（未確定状態）フラグ
     let saveTimeout = null;
 
-    // 初期データ読み込み
+    // 初期化
     window.addEventListener('DOMContentLoaded', () => {
       const savedText = localStorage.getItem(STORAGE_KEY_TEXT);
       const savedTitle = localStorage.getItem(STORAGE_KEY_TITLE);
@@ -192,39 +191,32 @@
       updateStatus();
     });
 
-    // 日本語入力の確定状態を監視（誤作動防止）
-    editor.addEventListener('compositionstart', () => {
-      isComposing = true;
-    });
-
-    editor.addEventListener('compositionend', () => {
-      isComposing = false;
-      saveWithDebounce();
-      updateStatus();
-    });
-
-    // 入力・削除イベント
+    // 入力・消去時のイベント
     editor.addEventListener('input', () => {
+      // 画面の強制描画更新（iOSの縦書き描画遅延対策）
+      forceRedraw();
+      
       updateStatus();
-      if (!isComposing) {
-        saveWithDebounce();
-      }
+      
+      // 保存
+      if (saveTimeout) clearTimeout(saveTimeout);
+      saveTimeout = setTimeout(() => {
+        localStorage.setItem(STORAGE_KEY_TEXT, editor.value);
+      }, 200);
     });
 
-    // タイトル保存
+    // iOSの描画遅延を打ち消す強制フラッシュ処理
+    function forceRedraw() {
+      const display = editor.style.display;
+      editor.style.display = 'none';
+      editor.offsetHeight; // 強制リフロー発生
+      editor.style.display = display;
+    }
+
     docTitle.addEventListener('input', () => {
       localStorage.setItem(STORAGE_KEY_TITLE, docTitle.value);
     });
 
-    // 遅延保存処理（消去連打時の復元バグを防ぐ）
-    function saveWithDebounce() {
-      if (saveTimeout) clearTimeout(saveTimeout);
-      saveTimeout = setTimeout(() => {
-        localStorage.setItem(STORAGE_KEY_TEXT, editor.value);
-      }, 300);
-    }
-
-    // 縦書き/横書き切り替え
     writingMode.addEventListener('change', (e) => {
       if (e.target.value === 'vertical') {
         editor.classList.add('vertical');
@@ -233,7 +225,6 @@
       }
     });
 
-    // ステータス更新
     function updateStatus() {
       const count = editor.value.length;
       charCount.textContent = count.toLocaleString();
@@ -246,7 +237,6 @@
       }
     }
 
-    // .txt保存
     btnTxt.addEventListener('click', () => {
       const title = docTitle.value.trim() || '無題の原稿';
       const blob = new Blob([editor.value], { type: 'text/plain;charset=utf-8' });
@@ -257,7 +247,6 @@
       URL.revokeObjectURL(a.href);
     });
 
-    // .docx保存
     btnDocx.addEventListener('click', async () => {
       const title = docTitle.value.trim() || '無題の原稿';
       const text = editor.value;
