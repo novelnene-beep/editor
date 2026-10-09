@@ -22,6 +22,7 @@
       min-height: 100vh;
       overflow-x: hidden;
       overflow-y: auto;
+      -webkit-text-size-adjust: 100%;
     }
 
     header {
@@ -97,20 +98,24 @@
       outline: none;
       background: transparent;
       font-family: "Hiragino Mincho ProN", "Yu Mincho", "MS PMincho", serif;
-      font-size: 1.05rem;
-      line-height: 1.8;
+      font-size: 1rem;
+      line-height: 2.0; /* iOSの縦書きカーソル位置判定に最適な行間 */
       color: #2b2b2b;
       resize: none;
       white-space: pre-wrap;
       word-wrap: break-word;
       -webkit-appearance: none;
+      caret-color: #8c6d58; /* カーソル位置が見やすくなるように色を指定 */
     }
 
+    /* 縦書き設定（カーソル位置判定の補正） */
     textarea.vertical {
       writing-mode: vertical-rl;
       -webkit-writing-mode: vertical-rl;
       overflow-x: auto;
       overflow-y: hidden;
+      letter-spacing: 0.05em;
+      font-feature-settings: "vkal" 1;
     }
 
     footer {
@@ -233,12 +238,10 @@
       }
     });
 
-    // 安全なファイル読み込み処理
     fileInput.addEventListener('change', async (e) => {
       const file = e.target.files[0];
       if (!file) return;
 
-      // 画像や動画など対象外ファイルの拒否ガード
       if (file.type.startsWith('image/') || file.type.startsWith('video/') || file.type.startsWith('audio/')) {
         alert('画像や動画ファイルは読み込めません。テキスト（.txt）または Word（.docx）ファイルを選択してください。');
         fileInput.value = '';
@@ -283,7 +286,6 @@
         };
         reader.readAsArrayBuffer(file);
       } else {
-        // テキストファイルとして安全に読み込み
         const reader = new FileReader();
         reader.onload = function(event) {
           editor.value = event.target.result;
@@ -350,8 +352,7 @@
       });
 
       const blob = await Packer.toBlob(doc);
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
+      const a = document.href = URL.createObjectURL(blob);
       a.download = `${title}.docx`;
       a.click();
       URL.revokeObjectURL(a.href);
